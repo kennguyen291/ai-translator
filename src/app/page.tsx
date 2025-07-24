@@ -53,14 +53,16 @@ export default function Page() {
     setVietnameseTranslation("");
 
     try {
-      // --- SIMULATION of getting transcription from a backend ---
+  
       const simulatedTranscription = `Hello and welcome to this tutorial on how to bake a delicious apple pie. First, you'll need to gather your ingredients: six medium-sized apples, one cup of sugar, a teaspoon of cinnamon, and a pre-made pie crust. We will start by peeling and slicing the apples. Remember, the thinner the slices, the better they will cook. Once you're done, we'll mix them with the sugar and cinnamon in a large bowl.`;
       setEnglishTranscription(simulatedTranscription);
-      // --- END SIMULATION ---
 
-      // --- LIVE GEMINI API CALL for Translation ---
+
+
       const translationPrompt = `Translate the following English text to Vietnamese. Provide only the clean, natural-sounding Vietnamese translation.\n\nEnglish Text:\n"${simulatedTranscription}"`;
+
       const translatedText = await callGeminiAPI(translationPrompt);
+      console.log("debug: ", translatedText)
       setVietnameseTranslation(translatedText);
     } catch (err) {
       setError(
@@ -163,7 +165,7 @@ export default function Page() {
                   <div className="text-slate-400">Đang tạo bản dịch...</div>
                 ) : (
                   <p>
-                    {vietnameseTranslation || "Bản dịch sẽ xuất hiện ở đây."}
+                    {vietnameseTranslation}
                   </p>
                 )}
               </div>
