@@ -1,103 +1,176 @@
-import Image from "next/image";
+"use client"; // This is crucial for Next.js to treat this as an interactive client-side component
 
-export default function Home() {
+import React, { useState, FC } from "react";
+import { callGeminiAPI } from "./service/geminiService";
+
+// --- Helper Components ---
+
+// Icon component for easily rendering SVG paths
+const Icon: FC<{ path: string; className?: string }> = ({
+  path,
+  className = "w-6 h-6",
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d={path} />
+  </svg>
+);
+
+// A simple spinner component for loading states
+const Spinner: FC = () => (
+  <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+);
+
+// --- Main Page Component for Next.js ---
+
+export default function Page() {
+  // --- State Management ---
+  const [youtubeUrl, setYoutubeUrl] = useState<string>("");
+  const [englishTranscription, setEnglishTranscription] = useState<string>("");
+  const [vietnameseTranslation, setVietnameseTranslation] =
+    useState<string>("");
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [error, setError] = useState<string | null>(null);
+  const [hasProcessed, setHasProcessed] = useState<boolean>(false);
+
+  const handleProcessVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!youtubeUrl) {
+      setError("Please paste a YouTube URL to begin.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setHasProcessed(true);
+    setEnglishTranscription("");
+    setVietnameseTranslation("");
+
+    try {
+      // --- SIMULATION of getting transcription from a backend ---
+      const simulatedTranscription = `Hello and welcome to this tutorial on how to bake a delicious apple pie. First, you'll need to gather your ingredients: six medium-sized apples, one cup of sugar, a teaspoon of cinnamon, and a pre-made pie crust. We will start by peeling and slicing the apples. Remember, the thinner the slices, the better they will cook. Once you're done, we'll mix them with the sugar and cinnamon in a large bowl.`;
+      setEnglishTranscription(simulatedTranscription);
+      // --- END SIMULATION ---
+
+      // --- LIVE GEMINI API CALL for Translation ---
+      const translationPrompt = `Translate the following English text to Vietnamese. Provide only the clean, natural-sounding Vietnamese translation.\n\nEnglish Text:\n"${simulatedTranscription}"`;
+      const translatedText = await callGeminiAPI(translationPrompt);
+      setVietnameseTranslation(translatedText);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred."
+      );
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="bg-slate-900 text-white min-h-screen font-sans flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-6xl mx-auto">
+        <header className="text-center my-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">
+            AI Video Translator
+          </h1>
+          <p className="text-slate-400 mt-3 text-lg">
+            Paste a YouTube link, get a translation, and explore the content
+            with AI.
+          </p>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <form onSubmit={handleProcessVideo} className="mb-8 max-w-4xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-grow w-full">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+                <Icon
+                  path="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m1.5-1.5L13.19 8.688m-1.5-1.5L10.44 6.25m-1.757-1.757a4.5 4.5 0 0 1 6.364 6.364l-4.5 4.5m-1.5 1.5L8.688 13.19"
+                  className="w-5 h-5"
+                />
+              </span>
+              <input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pr-4 pl-12 focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all placeholder:text-slate-500"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg px-6 py-3 font-semibold transition-all duration-200 ease-in-out transform hover:scale-105"
+            >
+              {isLoading ? (
+                <>
+                  <Spinner />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  {/* <Icon
+                    path="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.954 8.954 0 0 0 0 11.908c.44.439 1.152.439 1.591 0L12 15.955m9.75-3.955a8.954 8.954 0 0 1 0-11.908c-.44-.439-1.152-.439-1.591 0L12 8.045"
+                    className="w-5 h-5"
+                  /> */}
+                  <span>Translate</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-300 p-4 rounded-lg my-6 text-center flex items-center justify-center gap-3 max-w-4xl mx-auto">
+            <Icon
+              path="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+              className="w-6 h-6"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {hasProcessed && (
+          <div className="grid lg:grid-cols-2 gap-6 animate-fade-in">
+            {/* Left Column: Transcription and AI Tools */}
+            <div className="bg-slate-800/70 rounded-xl p-6 shadow-lg flex flex-col">
+              <h2 className="text-xl font-semibold mb-4 text-slate-300">
+                Original Transcription (English)
+              </h2>
+              <div className="h-60 overflow-y-auto pr-2 text-slate-300 leading-relaxed space-y-4 mb-6">
+                {isLoading ? (
+                  <div className="text-slate-400">
+                    Generating transcription...
+                  </div>
+                ) : (
+                  <p>{englishTranscription || "No transcription available."}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Translation */}
+            <div className="bg-slate-800/70 rounded-xl p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-4 text-slate-300">
+                Translation (Vietnamese)
+              </h2>
+              <div className="h-full overflow-y-auto pr-2 text-slate-300 leading-relaxed space-y-4">
+                {isLoading ? (
+                  <div className="text-slate-400">Đang tạo bản dịch...</div>
+                ) : (
+                  <p>
+                    {vietnameseTranslation || "Bản dịch sẽ xuất hiện ở đây."}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
