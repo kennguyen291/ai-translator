@@ -1,6 +1,7 @@
 "use client"; // This is crucial for Next.js to treat this as an interactive client-side component
 
-import React, { useState, FC } from "react";
+import axios from "axios";
+import React, { FC, useState } from "react";
 import { callGeminiAPI } from "./service/geminiService";
 
 // --- Helper Components ---
@@ -53,16 +54,21 @@ export default function Page() {
     setVietnameseTranslation("");
 
     try {
-  
-      const simulatedTranscription = `Hello and welcome to this tutorial on how to bake a delicious apple pie. First, you'll need to gather your ingredients: six medium-sized apples, one cup of sugar, a teaspoon of cinnamon, and a pre-made pie crust. We will start by peeling and slicing the apples. Remember, the thinner the slices, the better they will cook. Once you're done, we'll mix them with the sugar and cinnamon in a large bowl.`;
-      setEnglishTranscription(simulatedTranscription);
+      const transcribeResponse = await axios.post("/api/transcribe", {
+        youtubeUrl,
+      });
+      const transcription = transcribeResponse.data.transcription;
 
+      if (!transcription) {
+        throw new Error("Received an empty transcription from the server.");
+      }
 
+      setEnglishTranscription(transcription);
 
-      const translationPrompt = `Translate the following English text to Vietnamese. Provide only the clean, natural-sounding Vietnamese translation.\n\nEnglish Text:\n"${simulatedTranscription}"`;
+      const translationPrompt = `Translate the following English text to Vietnamese. Provide only the clean, natural-sounding Vietnamese translation.\n\nEnglish Text:\n"${transcription}"`;
 
       const translatedText = await callGeminiAPI(translationPrompt);
-      console.log("debug: ", translatedText)
+      console.log("debug: ", translatedText);
       setVietnameseTranslation(translatedText);
     } catch (err) {
       setError(
@@ -116,10 +122,10 @@ export default function Page() {
                 </>
               ) : (
                 <>
-                  {/* <Icon
+                  <Icon
                     path="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12a8.954 8.954 0 0 0 0 11.908c.44.439 1.152.439 1.591 0L12 15.955m9.75-3.955a8.954 8.954 0 0 1 0-11.908c-.44-.439-1.152-.439-1.591 0L12 8.045"
                     className="w-5 h-5"
-                  /> */}
+                  />
                   <span>Translate</span>
                 </>
               )}
@@ -164,9 +170,7 @@ export default function Page() {
                 {isLoading ? (
                   <div className="text-slate-400">Đang tạo bản dịch...</div>
                 ) : (
-                  <p>
-                    {vietnameseTranslation}
-                  </p>
+                  <p>{vietnameseTranslation}</p>
                 )}
               </div>
             </div>
