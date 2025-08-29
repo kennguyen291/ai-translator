@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const AWS_TRANSCRIBE_API = process.env.AWS_TRANSCRIBE_API!;
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const AWS_TRANSCRIBE_API = process.env.AWS_TRANSCRIBE_API;
   try {
     const sp = req.nextUrl.searchParams;
     const audioUrl = sp.get("audio_url");
