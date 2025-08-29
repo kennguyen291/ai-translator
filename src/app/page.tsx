@@ -1,11 +1,11 @@
 "use client"; // This is crucial for Next.js to treat this as an interactive client-side component
 
-import React, { FC, useState } from "react";
-import axiosClient from "./service/axios";
-import { ApiConstants } from "./utils/ApiConstants";
+import axios from "axios";
+import React, { useState } from "react";
 import Icon from "./components/Icon";
 import Spinner from "./components/Spinner";
-import axios from "axios";
+import axiosClient from "./service/axios";
+import { ApiConstants } from "./utils/ApiConstants";
 
 export default function Page() {
 
