@@ -1,35 +1,14 @@
 "use client"; // This is crucial for Next.js to treat this as an interactive client-side component
 
-import axios from "axios";
 import React, { FC, useState } from "react";
-import { callGeminiAPI } from "./service/geminiService";
-
-// --- Helper Components ---
-
-// Icon component for easily rendering SVG paths
-const Icon: FC<{ path: string; className?: string }> = ({
-  path,
-  className = "w-6 h-6",
-}) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d={path} />
-  </svg>
-);
-
-// A simple spinner component for loading states
-const Spinner: FC = () => (
-  <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-);
-
-// --- Main Page Component for Next.js ---
+import axiosClient from "./service/axios";
+import { ApiConstants } from "./utils/ApiConstants";
+import Icon from "./components/Icon";
+import Spinner from "./components/Spinner";
+import axios from "axios";
 
 export default function Page() {
-  // --- State Management ---
+
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [englishTranscription, setEnglishTranscription] = useState<string>("");
   const [vietnameseTranslation, setVietnameseTranslation] =
@@ -54,27 +33,42 @@ export default function Page() {
     setVietnameseTranslation("");
 
     try {
-      const transcribeResponse = await axios.post("/api/transcribe", {
-        youtubeUrl,
+      // Extract: YouTube URL -> MP3 in S3 
+      const extractResp = await axiosClient.get(ApiConstants.AUDIO_EXTRACT, {
+        params: { url: youtubeUrl },
       });
-      const transcription = transcribeResponse.data.transcription;
+    
+      const { audio_url } = extractResp.data || {};
+      if (!audio_url) {
+        throw new Error("Unexpected extract response. Missing audio URL.");
+      }
+
+      // 2) Transcribe
+      const transcribeResp = await axios.get(ApiConstants.AI_TRANSCRIPTION, {
+        params: { audio_url},
+      });
+      
+      const d = transcribeResp.data || {};
+      const transcription =
+        d.transcription ?? d.englishTranscription ?? d.english ?? "";
+      const translation =
+        d.translation ?? d.vietnameseTranslation ?? d.vietnamese ?? "";
 
       if (!transcription) {
         throw new Error("Received an empty transcription from the server.");
       }
+      if (!translation) {
+        // not fatal — set what we have; you can choose to throw instead
+        console.warn("Lambda 2 did not return a Vietnamese translation.");
+      }
 
       setEnglishTranscription(transcription);
-
-      const translationPrompt = `Translate the following English text to Vietnamese. Provide only the clean, natural-sounding Vietnamese translation.\n\nEnglish Text:\n"${transcription}"`;
-
-      const translatedText = await callGeminiAPI(translationPrompt);
-      console.log("debug: ", translatedText);
-      setVietnameseTranslation(translatedText);
+      setVietnameseTranslation(translation || "");
     } catch (err) {
+      console.error(err);
       setError(
         err instanceof Error ? err.message : "An unknown error occurred."
       );
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
