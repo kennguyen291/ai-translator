@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tf:apply": "cd terraform && terraform apply -auto-approve"
   },
   "dependencies": {
     "@google/genai": "^1.11.0",
