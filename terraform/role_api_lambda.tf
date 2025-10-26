@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_exec" {
-  name = "serverless_lambda"
+  name = "ai_translator_lambda_exec_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,7 +15,7 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 # TODO: Revisit to bring all the policy creation into one place
-# And assign the mto lambdas as needed rather than assign everything to one role.
+# Assign correct permissions lambdas as needed rather than assign everything to one role.
 data "aws_iam_policy_document" "dynamodb_write_policy" {
   statement {
     sid    = "AllowDynamoDBWrites"
@@ -26,6 +26,7 @@ data "aws_iam_policy_document" "dynamodb_write_policy" {
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",
       "dynamodb:BatchWriteItem",
+      "dynamodb:GetItem"
     ]
 
     resources = [
@@ -43,12 +44,13 @@ resource "aws_iam_policy" "lambda_dynamodb_write" {
 }
 
 # TODO:  Revisit to make this more moddular as well, so multiple policies can be attached as needed.
-# the AWSLambdaBasicExecutionRole is always needed
+# AWSLambdaBasicExecutionRole is always needed
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# policy attachment for DynamoDB write access
 resource "aws_iam_role_policy_attachment" "dynamodb_write_attachment" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_dynamodb_write.arn

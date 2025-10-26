@@ -21,18 +21,19 @@ resource "aws_lambda_function" "function_lambda" {
   filename    = data.archive_file.function_archive.output_path
   description = coalesce(var.description, "${var.function_name} Lambda function deployed via Terraform")
 
-  layers = ["arn:aws:lambda:ap-southeast-2:770693421928:layer:Klayers-p312-boto3:23"]
+  layers = var.layers
 
   runtime = var.python_version
   handler = "index.lambda_handler"
 
+  environment {
+    variables = var.environment_variables
+  }
+
   source_code_hash = data.archive_file.function_archive.output_base64sha256
   role             = var.lambda_role
 
-  tags = {
-    for key, value in var.tags :
-    key => value
-  }
+  tags = merge((var.tags), local.terraform_tags)
 }
 
 # lambda fucntion logging
@@ -41,7 +42,10 @@ resource "aws_cloudwatch_log_group" "function_log_group" {
   retention_in_days = 30
 }
 
-# permission for api gateway to invoke lambda function
+# There are two concepts for permissions related to lambda:
+# - Lambda Role: What can the lambda do
+# - Lambda Permission: Who can invoke the lambda
+# This is the latter, this resource gives permission to API Gateway to invoke the lambda function.
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"

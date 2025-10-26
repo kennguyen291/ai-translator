@@ -45,3 +45,4 @@ terraform/*.tfstate*
 terraform/.terraform*
 
 archives
+.vscode/launch.json

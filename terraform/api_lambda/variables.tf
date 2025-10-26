@@ -54,3 +54,15 @@ variable  "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "layers" {
+  description = "A list of Lambda layers to attach to the function."
+  type        = list(string)
+  default     = []
+}
+
+variable "environment_variables" {
+  description = "A map of environment variables for the Lambda function."
+  type        = map(string)
+  default     = {}
+}
