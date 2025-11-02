@@ -9,8 +9,9 @@ import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import Spinner from "./components/Spinner";
-import axiosClient from "./service/axios";
+
 import { ApiConstants } from "./utils/ApiConstants";
+import { axiosClient } from "./service/axios";
 
 const HISTORY_KEY = "avt_history";
 
