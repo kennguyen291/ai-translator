@@ -3,6 +3,19 @@ resource "aws_apigatewayv2_api" "ai_translator" {
   name          = "ai_translator"
   protocol_type = "HTTP"
 
+    # 👇 CORS for browser requests
+  cors_configuration {
+    allow_origins = [
+      "http://localhost:3000",                   # Next.js dev
+      "https://your-vercel-app.vercel.app",      # Vercel preview/prod
+      # "https://www.yourcustomdomain.com",      # custom domain if any
+    ]
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type", "authorization"]
+    expose_headers = []
+    max_age = 3600
+  }
+
   tags = {
     Terraform = "true"
     Project   = "ai_translator"
