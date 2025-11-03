@@ -68,7 +68,7 @@ module "ai_translator_lambda_auth_get" {
   source_file = "./../aws/lambda/auth/get/root"
 
   function_name   = "auth_get"
-  endpoint_method = "GET"
+  endpoint_method = "POST"
   endpoint_path   = "/auth"
   description     = "Authenticate User lambda function deployed via Terraform"
   python_version  = var.python_version

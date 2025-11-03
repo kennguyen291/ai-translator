@@ -102,6 +102,14 @@ def generate_token(username, secret):
     print(f"Generated JWT for user: {username}")
     return token
 
+CORS_HEADERS_GET = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store"
+}
+
 # --- Main Lambda Handler ---
 
 def lambda_handler(event, context):
@@ -119,7 +127,7 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 400,
                 'body': json.dumps({'message': 'Missing username or password_hash in request body.'}),
-                'headers': {'Content-Type': 'application/json'}
+                'headers': CORS_HEADERS_GET
             }
         
         # 2. Verify Credentials
@@ -130,7 +138,7 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 401,
                 'body': json.dumps({'message': 'Invalid username or password.'}),
-                'headers': {'Content-Type': 'application/json'}
+                'headers': CORS_HEADERS_GET
             }
             
         # 3. Retrieve JWT Secret from environment variable
@@ -146,13 +154,7 @@ def lambda_handler(event, context):
                 'message': 'Login successful.',
                 'token': token
             }),
-            'headers': {
-                'Content-Type': 'application/json',
-                # Set CORS headers if integrating with a web frontend
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization'
-            }
+            'headers': CORS_HEADERS_GET
         }
 
     except RuntimeError as e:
@@ -169,7 +171,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'body': json.dumps({'message': 'An unexpected server error occurred.'}),
-            'headers': {'Content-Type': 'application/json'}
+            'headers': CORS_HEADERS_GET
         }
 
 if __name__ == "__main__":

@@ -1,32 +1,77 @@
-// app/signup/page.tsx
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axiosClient from "@/app/service/axios";
-import { ApiConstants } from "@/app/utils/ApiConstants";
+import { useState } from "react";
+import { awsDevClient } from "../service/axios";
+import { ApiConstants } from "../utils/ApiConstants";
+
+
+// SHA-256 -> base64 (temp solution; prefer server-side bcrypt/argon2)
+async function sha256Base64(text: string): Promise<string> {
+  const enc = new TextEncoder().encode(text);
+  const hashBuf = await crypto.subtle.digest("SHA-256", enc);
+  const bytes = new Uint8Array(hashBuf);
+  let str = "";
+  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str);
+}
 
 export default function SignupPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");  // renamed
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
-    // e.preventDefault();
-    // setError(null);
-    // setLoading(true);
-    // try {
-    //   await axiosClient.post(ApiConstants.AUTH_SIGNUP, { name, email, password });
-    //   // Optionally auto-login then redirect:
-    //   router.push("/login"); // or router.push("/")
-    // } catch (err: any) {
-    //   setError(err?.response?.data?.message ?? "Sign up failed.");
-    // } finally {
-    //   setLoading(false);
-    // }
+    e.preventDefault();
+    setError(null);
+
+    const u = username.trim();
+    const em = email.trim();
+    const pw = password;
+
+    if (!u || !em || !pw) {
+      setError("Please fill all fields.");
+      return;
+    }
+    if (pw.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Client-side hash to satisfy current Lambda contract
+      const password_hash = await sha256Base64(pw);
+
+      const res = await awsDevClient.post(
+        ApiConstants.SIGNUP,      // should be "/user"
+        { username: u, email: em, password_hash },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      // 201 created → go to login (or auto-login if you add that later)
+      if (res.status === 201) {
+        router.push("/login");
+      } else {
+        // Handle unexpected statuses gracefully
+        const msg =
+          (res.data && (res.data.message || res.data.error)) ||
+          `Unexpected response (${res.status}).`;
+        setError(msg);
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        (typeof err?.response?.data === "string" ? err.response.data : null) ||
+        err?.message ||
+        "Sign up failed.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,14 +85,14 @@ export default function SignupPage() {
         )}
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm text-slate-300">Name</label>
+            <label className="block mb-1 text-sm text-slate-300">Username</label>
             <input
               type="text"
               className="w-full rounded-md bg-slate-900 border border-slate-700 p-3 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               required
-              autoComplete="name"
+              autoComplete="username"
             />
           </div>
           <div>
