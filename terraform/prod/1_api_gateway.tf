@@ -1,18 +1,20 @@
-# APIs group
+# ================================================================
+# ================API GATEWAYS DEFINITIONS ====================
+# ================================================================
 resource "aws_apigatewayv2_api" "ai_translator" {
-  name          = "ai_translator"
+  name          = "${local.application_name}_${local.environment}_api_gateway"
   protocol_type = "HTTP"
 
-  tags = {
-    Terraform = "true"
-    Project   = "ai_translator"
-  }
+  tags = local.common_tags
 }
 
 # api logging
 resource "aws_cloudwatch_log_group" "ai_translator_log_group" {
-  name              = "${local.ai_translator_application_name}/api_gw/${aws_apigatewayv2_api.ai_translator.name}"
+  
+  name              = "${local.application_name}/api_gw/${aws_apigatewayv2_api.ai_translator.name}"
   retention_in_days = 14
+
+  tags = local.common_tags
 }
 
 # Create default stage
@@ -38,4 +40,6 @@ resource "aws_apigatewayv2_stage" "ai_translator_default" {
       }
     )
   }
+
+  tags = local.common_tags
 }
