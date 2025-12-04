@@ -1,3 +1,4 @@
+# CREATING LAMBDA EXECUTION ROLE
 resource "aws_iam_role" "lambda_exec" {
   name = "ai_translator_lambda_exec_role"
 
@@ -12,9 +13,12 @@ resource "aws_iam_role" "lambda_exec" {
       }
     }]
   })
+
+  tags = local.common_tags
 }
 
 # TODO: Revisit to bring all the policy creation into one place
+# CREATING POLICIES
 # Assign correct permissions lambdas as needed rather than assign everything to one role.
 data "aws_iam_policy_document" "dynamodb_write_policy" {
   statement {
@@ -26,7 +30,8 @@ data "aws_iam_policy_document" "dynamodb_write_policy" {
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",
       "dynamodb:BatchWriteItem",
-      "dynamodb:GetItem"
+      "dynamodb:GetItem",
+      "dynamodb:Query"
     ]
 
     resources = [
@@ -41,16 +46,19 @@ resource "aws_iam_policy" "lambda_dynamodb_write" {
   name        = "LambdaDynamoDBWriteAccess-UserTable"
   description = "Allows Lambda to perform write operations on the specified DynamoDB table."
   policy      = data.aws_iam_policy_document.dynamodb_write_policy.json
+
+  tags = local.common_tags
 }
 
 # TODO:  Revisit to make this more moddular as well, so multiple policies can be attached as needed.
-# AWSLambdaBasicExecutionRole is always needed
+# ATTACHING POLICIES TO LAMBDA EXEC ROLE
+# attach AWSLambdaBasicExecutionRole to lambda
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# policy attachment for DynamoDB write access
+# attach policy to allow dynamodb write access
 resource "aws_iam_role_policy_attachment" "dynamodb_write_attachment" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_dynamodb_write.arn
