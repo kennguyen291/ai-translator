@@ -48,15 +48,20 @@ def verify_credentials(username, password_hash):
     Returns the user data if verification is successful, otherwise None.
     """
     try:
-        response = dynamodb_client.get_item(
+        response = dynamodb_client.query(
             TableName=USER_TABLE_NAME,
-            Key={'username': {'S': username}}
+            KeyConditionExpression='username = :username',
+            ExpressionAttributeValues={
+                ':username': {'S': username}
+            }
         )
         
-        item = response.get('Item')
-        if not item:
+        items = response.get('Items')
+        if not items:
             print(f"Login failed: User '{username}' not found.")
             return None
+
+        item = items[0]
 
         # DynamoDB stores attributes as objects (e.g., {'S': 'value'})
         stored_hash = item.get('password_hash', {}).get('S')
@@ -110,7 +115,6 @@ def lambda_handler(event, context):
     """
     try:
         # 1. Parse Input
-        # Assuming the input is a JSON body from API Gateway
         body = json.loads(event.get('body', '{}'))
         username = body.get('username')
         password_hash = body.get('password_hash')
@@ -139,19 +143,20 @@ def lambda_handler(event, context):
         # 4. Generate JWT
         token = generate_token(username, jwt_secret)
         
+        cookie_token = f'token={token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600'
+        
         # 5. Success Response
         return {
             'statusCode': 200,
             'body': json.dumps({
                 'message': 'Login successful.',
-                'token': token
             }),
             'headers': {
                 'Content-Type': 'application/json',
-                # Set CORS headers if integrating with a web frontend
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization'
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                'Set-Cookie': cookie_token
             }
         }
 
