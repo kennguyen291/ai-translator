@@ -1,8 +1,9 @@
 import json
 import boto3
 import uuid
+import os
 
-DYNAMODB_TABLE_NAME = 'User'
+DYNAMODB_TABLE_NAME = os.environ.get("USER_TABLE_NAME", "User")
 REGION = 'ap-southeast-2' 
 
 # Initialize the DynamoDB resource globally for better performance
